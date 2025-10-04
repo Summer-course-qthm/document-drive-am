@@ -2,28 +2,25 @@ package com.document.anhminh.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.type.descriptor.jdbc.TinyIntJdbcType;
 
+@Data
 @Entity
-@Table(name = "userRole")
+@Table(name = "user_role")
+@IdClass(UserRoleId.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class UserRoleEntity {
+    @Id
+    @Column(name = "user_id")
+    private Integer userId;
 
     @Id
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private UserEntity user;
-
-    @Id
-    @ManyToOne
-    @JoinColumn(name = "role_id", nullable = false)
-    private RoleEntity role;
+    @Column(name = "role_id")
+    private Integer roleId;
 
     private String type;
-
-    private Integer item_id;
-
+    private String itemId;
 }
