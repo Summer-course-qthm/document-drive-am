@@ -22,5 +22,5 @@ public class UserRoleEntity {
     private Integer roleId;
 
     private String type;
-    private String itemId;
+    private Integer itemId;
 }
