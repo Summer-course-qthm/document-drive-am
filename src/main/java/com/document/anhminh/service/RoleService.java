@@ -39,6 +39,7 @@ public class RoleService {
     }
 
     //Xóa role theo ID
+    //rename Remove user access
     public void deleteRole (Integer userId,Integer roleId) {
         userRoleRepository.deleteByUserIdAndRoleId(userId, roleId);
     }
@@ -48,6 +49,8 @@ public class RoleService {
     }
 
     //Cấp Role cho user
+    //Rename GrantUserAccessRole
+    //Item_id
     public void addRole(Integer userId, Integer roleId) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User không tồn tại"));
@@ -65,7 +68,7 @@ public class RoleService {
     }
 
     //Xóa Role của User
-
+    //Dư thừa
     public void removeRoleFromUser(Integer userId, Integer roleId) {
         UserRoleId id = new UserRoleId();
         id.setUserId(userId);
@@ -76,6 +79,7 @@ public class RoleService {
 
 
     //Lấy danh sách Role của User
+    //Thay đổi lại, lấy tất cả item mà user được grant access
     public List<UserRoleEntity> getRoleByUser(Integer userId){
         return userRoleRepository.findByUserId(userId);
     }
