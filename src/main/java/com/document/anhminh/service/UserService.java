@@ -34,9 +34,6 @@ public class UserService {
                 .fullname(request.getFullname())
                 .build();
 
-        userRepository.save(user);
-
-
 //        UserEntity user = new UserEntity();
 //        user.setUsername(request.getUsername());
 //        user.setPassword(passwordEncoder.encode(request.getPassword()));

@@ -4,6 +4,7 @@ import com.document.anhminh.DTO.request.AccessListRequest;
 import com.document.anhminh.DTO.request.AccessRequest;
 import com.document.anhminh.entity.UserRoleEntity;
 import com.document.anhminh.service.AccessService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,7 +12,9 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/access")
+
 public class AccessController {
+    @Autowired
     private AccessService accessService;
 
     //Cấp quyền

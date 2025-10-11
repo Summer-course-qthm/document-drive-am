@@ -5,6 +5,7 @@ import com.document.anhminh.entity.UserEntity;
 import com.document.anhminh.entity.UserRoleEntity;
 import com.document.anhminh.entity.UserRoleId;
 import com.document.anhminh.repository.UserRoleRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
 @Service
 public class AccessService {
 
+    @Autowired
     private UserRoleRepository userRoleRepository;
 
     // Cấp quyền truy cập cho user vào folder/file

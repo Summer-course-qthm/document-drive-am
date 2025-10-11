@@ -19,5 +19,5 @@ public class CollectionEntity {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private UserEntity user_id;
+    private UserEntity userid;
 }
