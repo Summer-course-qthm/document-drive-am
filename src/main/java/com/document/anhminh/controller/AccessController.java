@@ -2,6 +2,7 @@ package com.document.anhminh.controller;
 
 import com.document.anhminh.DTO.request.AccessListRequest;
 import com.document.anhminh.DTO.request.AccessRequest;
+import com.document.anhminh.DTO.response.AccessDetailResponse;
 import com.document.anhminh.entity.UserRoleEntity;
 import com.document.anhminh.service.AccessService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,8 +44,17 @@ public class AccessController {
     }
 
     // Lấy tất cả user có quyền trên folder/file
+//    @PostMapping("/list")
+//    public ResponseEntity<List<UserRoleEntity>> getAccessList(
+//            @RequestBody AccessListRequest request) {
+//        return ResponseEntity.ok(
+//                accessService.getAllAccess(request.getType(), request.getItemId())
+//        );
+//    }
+
+    // Lấy tất cả user có quyền trên folder/file
     @PostMapping("/list")
-    public ResponseEntity<List<UserRoleEntity>> getAccessList(
+    public ResponseEntity<List<AccessDetailResponse>> getAccessList(
             @RequestBody AccessListRequest request) {
         return ResponseEntity.ok(
                 accessService.getAllAccess(request.getType(), request.getItemId())
