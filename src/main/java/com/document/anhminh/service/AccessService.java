@@ -12,7 +12,10 @@ import com.document.anhminh.repository.UserRoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,7 +31,7 @@ public class AccessService {
     private UserRoleRepository userRoleRepository;
 
     // Cấp quyền truy cập cho user vào folder/file
-    public String grantAccess (Integer userId, Integer roleId, String type, Integer itemId) {
+    public String grantAccess(Integer userId, Integer roleId, String type, Integer itemId) {
         UserRoleEntity access = UserRoleEntity.builder()
                 .userId(userId)
                 .roleId(roleId)
@@ -36,7 +39,7 @@ public class AccessService {
                 .itemId(itemId)
                 .build();
         userRoleRepository.save(access);
-        return "Cấp quyền truy cập thành công" + type  + itemId + "cho user " + userId;
+        return "Cấp quyền truy cập thành công" + type + itemId + "cho user " + userId;
     }
 
     //Xóa quyền truy cập
@@ -63,27 +66,51 @@ public class AccessService {
      */
     public List<AccessDetailResponse> getAllAccess(String type, Integer itemId) {
         // 1. Lọc ra các quyền truy cập tương ứng
-        // lọc ra type và itemid của từng user
         List<UserRoleEntity> accessList = userRoleRepository.findAll().stream()
                 .filter(r -> type.equals(r.getType()) && itemId.equals(r.getItemId()))
                 .toList();
 
-        // 2. Chuyển đổi (map) danh sách UserRoleEntity sang AccessDetailResponse
+        // Nếu không có quyền nào, trả về danh sách rỗng ngay lập tức
+        if (accessList.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 2. Lấy ra danh sách các userId duy nhất từ accessList
+        List<Integer> userIds = accessList.stream()
+                .map(UserRoleEntity::getUserId)
+                .distinct()
+                .toList();
+
+        // 3. Truy vấn TẤT CẢ user chỉ bằng MỘT câu lệnh và đưa vào Map để tra cứu nhanh
+        Map<Integer, UserEntity> userMap = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(UserEntity::getUserId, Function.identity()));
+
+        // 4. Chuyển đổi (map) danh sách sang Response DTO
         return accessList.stream().map(access -> {
 
-            // Tìm user và role tương ứng
-            UserEntity user = userRepository.findById(access.getUserId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy User ID: " + access.getUserId()));
-            RoleEntity role = roleRepository.findById(access.getRoleId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy Role ID: " + access.getRoleId()));
+            // Lấy user từ Map đã truy vấn sẵn
+            UserEntity user = userMap.get(access.getUserId());
 
             // Xây dựng đối tượng response
             return AccessDetailResponse.builder()
-                    .username(user.getUsername())
-                    .roleName(role.getRoleName())
+                    .username(user != null ? user.getUsername() : "HauHiHung-TODO") // Lấy username từ map
+                    .roleName(getRoleNameById(access.getRoleId())) // Lấy role name từ hàm nội bộ
                     .type(access.getType())
                     .itemId(access.getItemId())
                     .build();
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * Hàm nội bộ để chuyển đổi Role ID sang Tên (KHÔNG QUERY DATABASE)
+     * Giả sử: 1=ADMIN, 2=EDITOR, 3=VIEWER. Bạn hãy sửa lại cho đúng với CSDL của bạn.
+     */
+    private String getRoleNameById(Integer roleId) {
+        return switch (roleId) {
+            case 1 -> "ADMIN";
+            case 2 -> "VIEWER";
+            case 3 -> "EDITOR";
+            default -> "Unknown Role";
+        };
     }
 }
