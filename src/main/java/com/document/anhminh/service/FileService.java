@@ -5,151 +5,115 @@ import com.document.anhminh.entity.FileEntity;
 import com.document.anhminh.entity.FolderEntity;
 import com.document.anhminh.repository.FileRepository;
 import com.document.anhminh.repository.FolderRepository;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 
 @Service
 public class FileService {
-
-    private final Path fileStorageLocation;
 
     @Autowired
     private FileRepository fileRepository;
     @Autowired
     private FolderRepository folderRepository;
-
     @Autowired
-    public FileService(@Value("${file.upload-dir}") String uploadDir) {
-        this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
-        try {
-            Files.createDirectories(this.fileStorageLocation);
-        } catch (Exception ex) {
-            throw new RuntimeException("Không thể tạo thư mục để lưu trữ file.", ex);
-        }
+    private GoogleDriveService googleDriveService; // <-- Dùng service mới
+
+    // Lớp nội bộ để chứa dữ liệu tải về
+    @Data
+    @AllArgsConstructor
+    public static class FileDownloadData {
+        private Resource resource;
+        private String filename;
+        private String contentType;
     }
 
     /**
-     * Lưu file tải lên
+     * Tải file lên Google Drive và lưu thông tin vào CSDL.
      */
     public FileEntity storeFile(MultipartFile file, Integer folderId) {
         FolderEntity folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new RuntimeException("Thư mục không tồn tại!"));
-
-        String fileName = StringUtils.cleanPath(file.getOriginalFilename());
-
         try {
-            if (fileName.contains("..")) {
-                throw new RuntimeException("Tên file chứa ký tự không hợp lệ!");
-            }
+            // 1. Tải file lên Google Drive và nhận về File ID
+            String fileId = googleDriveService.uploadFile(file);
 
-            // Đường dẫn đầy đủ tới file
-            Path targetLocation = this.fileStorageLocation.resolve(fileName);
-            // Copy file vào thư mục lưu trữ (thay thế nếu đã tồn tại)
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-
-            // Lưu thông tin file vào CSDL
+            // 2. Lưu thông tin vào CSDL
             FileEntity fileEntity = new FileEntity();
             fileEntity.setFolder(folder);
-            fileEntity.setName(fileName);
+            fileEntity.setName(file.getOriginalFilename());
             fileEntity.setType(file.getContentType());
             fileEntity.setSize((int) file.getSize());
-            fileEntity.setLink(targetLocation.toString()); // Lưu đường dẫn
+            fileEntity.setLink(fileId); // <-- Quan trọng: Lưu Google Drive File ID vào trường link
 
             return fileRepository.save(fileEntity);
-        } catch (IOException ex) {
-            throw new RuntimeException("Không thể lưu file " + fileName, ex);
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi khi tải file lên Google Drive", e);
         }
     }
 
     /**
-     * Tạo một bản ghi file mới từ link được cung cấp
+     * Xóa file trên Google Drive và trong CSDL.
      */
+    public String deleteFile(Integer fileId) {
+        FileEntity fileEntity = fileRepository.findById(fileId)
+                .orElseThrow(() -> new RuntimeException("File không tồn tại!"));
+        try {
+            // 1. Xóa file trên Google Drive bằng ID đã lưu
+            googleDriveService.deleteFile(fileEntity.getLink());
+
+            // 2. Xóa bản ghi trong CSDL
+            fileRepository.delete(fileEntity);
+
+            return "Đã xóa file thành công: " + fileEntity.getName();
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi khi xóa file trên Google Drive!", e);
+        }
+    }
+
+    /**
+     * Tải file từ Google Drive.
+     */
+    public FileDownloadData loadFileAsResource(Integer fileId) {
+        try {
+            FileEntity fileEntity = fileRepository.findById(fileId)
+                    .orElseThrow(() -> new RuntimeException("File không tồn tại!"));
+
+            // Dùng ByteArrayOutputStream để hứng dữ liệu từ Google Drive
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            googleDriveService.downloadFile(fileEntity.getLink(), outputStream);
+
+            // Gói dữ liệu thành Resource để trả về
+            Resource resource = new ByteArrayResource(outputStream.toByteArray());
+
+            return new FileDownloadData(resource, fileEntity.getName(), fileEntity.getType());
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi khi tải file từ Google Drive!", e);
+        }
+    }
+
+    // Chức năng này vẫn hoạt động như cũ vì nó không xử lý file vật lý
     public FileEntity createFileFromLink(CreateFileLinkRequest request) {
-        // 1. Tìm folder cha
         FolderEntity folder = folderRepository.findById(request.getFolderId())
                 .orElseThrow(() -> new RuntimeException("Thư mục không tồn tại!"));
-
-        // 2. Tạo đối tượng FileEntity mới
         FileEntity newFile = new FileEntity();
         newFile.setFolder(folder);
         newFile.setName(request.getName());
         newFile.setType(request.getType());
         newFile.setSize(request.getSize());
-        newFile.setLink(request.getLink()); // Lấy link trực tiếp từ request
-
-        // 3. Lưu vào cơ sở dữ liệu và trả về
+        newFile.setLink(request.getLink());
         return fileRepository.save(newFile);
     }
 
-    /**
-     * Xóa một file
-     */
-    public String deleteFile(Integer fileId) {
-        FileEntity fileEntity = fileRepository.findById(fileId)
-                .orElseThrow(() -> new RuntimeException("File không tồn tại!"));
-
-        try {
-            // Xóa file vật lý trên ổ đĩa
-            Path filePath = Paths.get(fileEntity.getLink());
-            Files.deleteIfExists(filePath);
-
-            // Xóa thông tin file trong CSDL
-            fileRepository.delete(fileEntity);
-
-            return "Đã xóa file thành công: " + fileEntity.getName();
-        } catch (IOException ex) {
-            throw new RuntimeException("Lỗi khi xóa file!", ex);
-        }
-    }
-
-    /**
-     * Đổi tên một file
-     * @param fileId ID của file cần đổi tên
-     * @param newName Tên mới (không cần bao gồm đuôi file)
-     * @return Thông tin file sau khi đã được đổi tên
-     */
+    // Chức năng đổi tên cần logic riêng để tương tác với Google Drive API
     public FileEntity renameFile(Integer fileId, String newName) {
-        // 1. Tìm file trong CSDL
-        FileEntity fileEntity = fileRepository.findById(fileId)
-                .orElseThrow(() -> new RuntimeException("File không tồn tại!"));
-
-        try {
-            // 2. Lấy đường dẫn cũ và chuẩn bị đường dẫn mới
-            Path oldPath = Paths.get(fileEntity.getLink());
-            String originalFilename = oldPath.getFileName().toString();
-
-            // Lấy đuôi file cũ (ví dụ: ".txt", ".jpg")
-            String fileExtension = "";
-            int lastIndex = originalFilename.lastIndexOf('.');
-            if (lastIndex >= 0) {
-                fileExtension = originalFilename.substring(lastIndex);
-            }
-
-            // Tạo tên file mới hoàn chỉnh bằng cách ghép tên mới và đuôi file cũ
-            String finalNewName = newName + fileExtension;
-            Path newPath = oldPath.resolveSibling(finalNewName);
-
-            // 3. Thực hiện đổi tên file trên ổ đĩa
-            Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING);
-
-            // 4. Cập nhật lại thông tin trong đối tượng Entity
-            fileEntity.setName(finalNewName);
-            fileEntity.setLink(newPath.toString());
-
-            // 5. Lưu lại vào CSDL và trả về
-            return fileRepository.save(fileEntity);
-
-        } catch (IOException ex) {
-            throw new RuntimeException("Lỗi khi đổi tên file: " + fileEntity.getName(), ex);
-        }
+        throw new UnsupportedOperationException("Chức năng đổi tên file trên Google Drive chưa được cài đặt.");
     }
 }
