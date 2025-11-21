@@ -2,267 +2,104 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Chi tiết Folder</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background-color: #f9f9f9; }
-        #app { max-width: 900px; margin: 2rem auto; padding: 2rem; background: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 1rem; }
-        header h1 { margin: 0; color: #333; }
-        #logoutButton { background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-
-        .page-title { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; }
-        #uploadFileBtn { background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-
-        #file-list { list-style: none; padding: 0; }
-        #file-list li { display: flex; justify-content: space-between; align-items: center; background: #fafafa; border: 1px solid #ddd; padding: 1rem; margin-top: 1rem; border-radius: 6px; }
-        #file-list li strong { font-size: 1.1rem; color: #333; }
-        #file-list .file-actions button { margin-left: 10px; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
-        .download-btn { background: #007bff; color: white; }
-        .delete-btn { background: #dc3545; color: white; }
-
-        #error-message { color: #dc3545; font-weight: bold; margin-top: 1rem; }
-        .breadcrumb { font-size: 1.2rem; margin-bottom: 1rem; }
-        .breadcrumb a { color: #007bff; text-decoration: none; }
-        .breadcrumb span { color: #6c757d; }
-
-        /* CSS cho Modal */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 400px; border-radius: 8px; }
-        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 5px; }
-        .form-group input { width: 95%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        .modal-button { background: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Folder</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 </head>
-<body>
-
-<div id="app">
-    <header>
-        <h1 id="page-title">...</h1>
-        <button id="logoutButton">Đăng xuất</button>
-    </header>
-
-    <main>
-        <div class="breadcrumb">
-            <a href="/">Trang chủ</a> /
-            <a id="back-to-collection-link" href="#">...</a> /
-            <span id="folder-name-breadcrumb">...</span>
+<body class="bg-light">
+<nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-semibold text-primary" href="/">Drive Space</a>
+        <div class="d-flex align-items-center gap-2">
+            <a class="btn btn-link text-decoration-none" th:href="@{/collection(id=${collectionId})}">Collection</a>
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="btn btn-outline-primary btn-sm">Đăng xuất</button>
+            </form>
         </div>
-
-        <div class="page-title">
-            <h2>Danh sách File</h2>
-            <button id="uploadFileBtn">+ Upload File Mới</button>
-        </div>
-
-        <ul id="file-list">
-        </ul>
-        <div id="error-message"></div>
-    </main>
-</div>
-
-<div id="uploadFileModal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <h2>Upload File Mới</h2>
-        <form id="uploadFileForm">
-            <div class="form-group">
-                <label for="fileInput">Chọn file:</label>
-                <input type="file" id="fileInput" required>
-            </div>
-            <button type="submit" class="modal-button">Upload</button>
-        </form>
-        <div id="modal-error" style="color: red; margin-top: 10px;"></div>
     </div>
-</div>
+</nav>
 
-<script>
-    const token = localStorage.getItem('jwtToken');
-    if (!token) {
-        window.location.href = '/login';
-    }
+<main class="container pb-5">
+    <div class="bg-white border rounded-4 shadow-sm p-3 p-lg-4 mb-4">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-8">
+                <p class="text-uppercase text-muted small mb-1">Folder hiện tại</p>
+                <h1 class="h3 mb-1" th:text="${folderName}">Tên folder</h1>
+                <p class="text-muted mb-0">Thuộc collection <span class="fw-semibold" th:text="${collectionName}">Collection</span></p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a class="btn btn-outline-secondary btn-sm" th:href="@{/collection(id=${collectionId})}">&larr; Trở lại collection</a>
+            </div>
+        </div>
+    </div>
 
-    // 1. LẤY THÔNG TIN TỪ URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const folderId = urlParams.get('id');
-    const folderName = urlParams.get('name');
-    const collectionId = urlParams.get('collectionId'); // Lấy từ bước 1
+    <div th:if="${message}" class="alert alert-success rounded-4 border-0 shadow-sm" th:text="${message}"></div>
+    <div th:if="${error}" class="alert alert-danger rounded-4 border-0 shadow-sm" th:text="${error}"></div>
 
-    // Lấy các phần tử HTML
-    document.getElementById('page-title').textContent = `Folder: ${folderName}`;
-    document.getElementById('folder-name-breadcrumb').textContent = folderName;
-    document.getElementById('back-to-collection-link').href = `/collection?id=${collectionId}`;
-    document.getElementById('back-to-collection-link').textContent = "Collection"; // Bạn có thể đặt tên Collection ở đây nếu muốn
-
-    const fileList = document.getElementById('file-list');
-    const errorDiv = document.getElementById('error-message');
-    const logoutButton = document.getElementById('logoutButton');
-
-    // Các phần tử của Modal
-    const modal = document.getElementById('uploadFileModal');
-    const createBtn = document.getElementById('uploadFileBtn');
-    const closeBtn = document.querySelector('.close');
-    const uploadFileForm = document.getElementById('uploadFileForm');
-    const fileInput = document.getElementById('fileInput');
-    const modalError = document.getElementById('modal-error');
-
-    // Hàm gọi API (dùng chung)
-    // Cập nhật để xử lý FormData và JSON
-    async function fetchApi(url, options = {}) {
-        const defaultHeaders = {
-            'Authorization': 'Bearer ' + token
-        };
-
-        // Không set Content-Type cho FormData, trình duyệt sẽ tự làm
-        if (!(options.body instanceof FormData)) {
-            defaultHeaders['Content-Type'] = 'application/json';
-        }
-
-        const response = await fetch(url, {
-            ...options,
-            headers: { ...defaultHeaders, ...options.headers }
-        });
-
-        if (response.status === 401 || response.status === 403) throw new Error('Token không hợp lệ hoặc đã hết hạn.');
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || 'Đã xảy ra lỗi.');
-        }
-
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) return response.json();
-        return response.text(); // Dùng cho hàm Delete
-    }
-
-    // Hàm lấy danh sách file
-    async function loadFiles() {
-        if (!folderId) {
-            errorDiv.textContent = "Không tìm thấy Folder ID.";
-            return;
-        }
-        try {
-            // 2. GỌI API ĐỂ LẤY FILES
-            const files = await fetchApi(`/files/by-folder/${folderId}`);
-            displayFiles(files);
-        } catch (error) {
-            handleAuthError(error);
-        }
-    }
-
-    // Hàm hiển thị file lên HTML
-    function displayFiles(files) {
-        fileList.innerHTML = '';
-        if (files.length === 0) {
-            fileList.innerHTML = '<li>Folder này chưa có file nào.</li>';
-            return;
-        }
-        for (const file of files) {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <strong>${file.name}</strong>
-                <div class="file-actions">
-                    <button class="download-btn" data-id="${file.id}" data-name="${file.name}">Tải về</button>
-                    <button class="delete-btn" data-id="${file.id}" data-name="${file.name}">Xóa</button>
+    <div class="row g-4">
+        <section class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <p class="text-uppercase text-muted small mb-1">Danh sách file</p>
+                            <h2 class="h5 mb-0">Tài liệu hiện có</h2>
+                        </div>
+                        <span class="badge text-bg-light text-secondary px-3 py-2" th:text="${danhSachFile.size()} + ' file'">0 file</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th scope="col">Tên file</th>
+                                <th scope="col" class="text-center">Kích thước</th>
+                                <th scope="col" class="text-end">Thao tác</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="file : ${danhSachFile}">
+                                <td>
+                                    <div class="fw-semibold" th:text="${file.name}">Tên file</div>
+                                    <div class="text-muted small" th:text="${file.type}">Loại file</div>
+                                </td>
+                                <td class="text-center text-muted">
+                                    <span th:text="${file.size != null ? #numbers.formatDecimal(file.size / 1024.0, 1, 1) + ' KB' : '—'}">0 KB</span>
+                                </td>
+                                <td class="text-end">
+                                    <a class="btn btn-outline-primary btn-sm me-2" th:href="@{/file/download(id=${file.id})}">Tải xuống</a>
+                                    <form th:action="@{/file/delete}" method="post" class="d-inline">
+                                        <input type="hidden" name="fileId" th:value="${file.id}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">Xóa</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(danhSachFile)}">
+                                <td colspan="3" class="text-center text-muted py-4">Folder này chưa có file nào.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            `;
-            fileList.appendChild(li);
-        }
-    }
+            </div>
+        </section>
 
-    // === XỬ LÝ UPLOAD FILE ===
-    createBtn.onclick = () => {
-        modal.style.display = "block";
-        modalError.textContent = "";
-        uploadFileForm.reset(); // Xóa file đã chọn (nếu có)
-    }
-    closeBtn.onclick = () => { modal.style.display = "none"; }
-
-    // 3. GỌI API UPLOAD (DÙNG FORMDATA)
-    uploadFileForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        if (fileInput.files.length === 0) {
-            modalError.textContent = "Vui lòng chọn một file.";
-            return;
-        }
-
-        const file = fileInput.files[0];
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('folderId', folderId);
-
-        try {
-            await fetchApi('/files/upload', {
-                method: 'POST',
-                body: formData // Gửi FormData, không phải JSON
-            });
-            loadFiles(); // Tải lại danh sách
-            modal.style.display = "none";
-        } catch (error) {
-            modalError.textContent = "Lỗi: " + error.message;
-        }
-    });
-
-    // === XỬ LÝ CLICK TẢI VỀ VÀ XÓA ===
-    fileList.addEventListener('click', async (event) => {
-        const target = event.target;
-        const fileId = target.dataset.id;
-        const fileName = target.dataset.name;
-
-        // 4. GỌI API XÓA FILE
-        if (target.classList.contains('delete-btn')) {
-            if (confirm(`Bạn có chắc muốn xóa file "${fileName}" không?`)) {
-                try {
-                    await fetchApi(`/files/${fileId}`, { method: 'DELETE' });
-                    loadFiles(); // Tải lại danh sách
-                } catch (error) {
-                    handleAuthError(error);
-                }
-            }
-        }
-
-        // 5. XỬ LÝ TẢI FILE (DÙNG BLOB)
-        if (target.classList.contains('download-btn')) {
-            try {
-                // Dùng fetch gốc vì chúng ta cần response đầy đủ
-                const response = await fetch(`/files/download/${fileId}`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!response.ok) throw new Error('Không thể tải file.');
-
-                const blob = await response.blob(); // Lấy file về dưới dạng Blob
-                const url = window.URL.createObjectURL(blob); // Tạo URL tạm
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = fileName; // Tên file khi tải về
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                a.remove();
-            } catch (error) {
-                errorDiv.textContent = "Lỗi khi tải file: " + error.message;
-            }
-        }
-    });
-
-    // Hàm xử lý khi token hỏng/hết hạn
-    function handleAuthError(error) {
-        console.error('Lỗi xác thực:', error.message);
-        errorDiv.textContent = 'Phiên đăng nhập hết hạn. Đang chuyển về trang đăng nhập...';
-        localStorage.removeItem('jwtToken');
-        setTimeout(() => { window.location.href = '/login'; }, 2000);
-    }
-
-    // Xử lý đăng xuất
-    logoutButton.addEventListener('click', () => {
-        localStorage.removeItem('jwtToken');
-        window.location.href = '/login';
-    });
-
-    // Chạy hàm khi trang được tải
-    loadFiles();
-
-</script>
-
+        <aside class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                    <p class="text-uppercase text-muted small mb-2">Upload file</p>
+                    <h2 class="h5 mb-3">Thêm tài liệu mới</h2>
+                    <form th:action="@{/file/upload}" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="fileInput" class="form-label">Chọn file</label>
+                            <input id="fileInput" type="file" name="file" class="form-control" required>
+                        </div>
+                        <input type="hidden" name="folderId" th:value="${folderId}">
+                        <button type="submit" class="btn btn-primary w-100">Tải lên</button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+    </div>
+</main>
 </body>
 </html>

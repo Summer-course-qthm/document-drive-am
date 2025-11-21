@@ -32,5 +32,8 @@ public class CollectionService {
         return collectionRepository.findAll();
     }
 
-
+    public CollectionEntity getCollection(Integer collectionId) {
+        return collectionRepository.findById(collectionId)
+                .orElseThrow(() -> new RuntimeException("Collection không tồn tại!"));
+    }
 }

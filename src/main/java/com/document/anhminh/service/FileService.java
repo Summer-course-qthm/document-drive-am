@@ -124,4 +124,9 @@ public class FileService {
         }
         return fileRepository.findByFolderId(folderId);
     }
+
+    public FileEntity getFile(Integer fileId) {
+        return fileRepository.findById(fileId)
+                .orElseThrow(() -> new RuntimeException("File không tồn tại!"));
+    }
 }

@@ -3,6 +3,9 @@ package com.document.anhminh.controller;
 import com.document.anhminh.entity.FileEntity;
 import com.document.anhminh.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,5 +43,20 @@ public class FileController {
     @GetMapping("/by-folder/{folderId}")
     public ResponseEntity<List<FileEntity>> getFilesByFolder(@PathVariable Integer folderId) {
         return ResponseEntity.ok(fileService.getFilesByFolder(folderId));
+    }
+
+    @GetMapping("/{fileId}/download")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Integer fileId) {
+        FileService.FileDownloadData data = fileService.loadFileAsResource(fileId);
+
+        MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        if (data.getContentType() != null) {
+            mediaType = MediaType.parseMediaType(data.getContentType());
+        }
+
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + data.getFilename() + "\"")
+                .body(data.getResource());
     }
 }

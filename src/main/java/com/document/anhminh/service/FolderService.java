@@ -34,7 +34,7 @@ public class FolderService {
      */
     public FolderEntity createFolder(FolderRequest request) {
         // Kiểm tra Collection có tồn tại không
-        CollectionEntity collection = collectionRepository.findById(request.getCollectionId().intValue())
+        CollectionEntity collection = collectionRepository.findById(request.getCollectionId())
                 .orElseThrow(() -> new RuntimeException("Collection không tồn tại!"));
 
         // Kiểm tra tên thư mục đã tồn tại trong Collection này chưa
@@ -96,5 +96,10 @@ public class FolderService {
             throw new RuntimeException("Collection không tồn tại!");
         }
         return folderRepository.findByCollectionId(collectionId);
+    }
+
+    public FolderEntity getFolder(Integer folderId) {
+        return folderRepository.findById(folderId)
+                .orElseThrow(() -> new RuntimeException("Folder không tồn tại!"));
     }
 }

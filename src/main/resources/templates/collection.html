@@ -2,212 +2,88 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Chi tiết Collection</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background-color: #f9f9f9; }
-        #app { max-width: 900px; margin: 2rem auto; padding: 2rem; background: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 1rem; }
-        header h1 { margin: 0; color: #333; }
-        #logoutButton { background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-
-        .page-title { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; }
-        #createFolderBtn { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-
-        #folder-list { list-style: none; padding: 0; }
-        #folder-list li a { display: flex; justify-content: space-between; align-items: center; background: #fafafa; border: 1px solid #ddd; padding: 1rem; margin-top: 1rem; border-radius: 6px; text-decoration: none; color: inherit; }
-        #folder-list li a:hover { background: #f0f0f0; border-color: #007bff; }
-        #folder-list li strong { font-size: 1.1rem; color: #0056b3; }
-
-        #error-message { color: #dc3545; font-weight: bold; margin-top: 1rem; }
-        .breadcrumb { font-size: 1.2rem; margin-bottom: 1rem; }
-        .breadcrumb a { color: #007bff; text-decoration: none; }
-        .breadcrumb span { color: #6c757d; }
-
-        /* CSS cho Modal (Pop-up) */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 400px; border-radius: 8px; }
-        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 5px; }
-        .form-group input { width: 95%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        .modal-button { background: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Collection</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 </head>
-<body>
-
-<div id="app">
-    <header>
-        <h1 id="page-title">...</h1>
-        <button id="logoutButton">Đăng xuất</button>
-    </header>
-
-    <main>
-        <div class="breadcrumb">
-            <a href="/">Trang chủ</a> /
-            <span id="collection-name-breadcrumb">...</span>
+<body class="bg-light">
+<nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-semibold text-primary" href="/">Drive Space</a>
+        <div class="ms-auto">
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="btn btn-outline-primary btn-sm">Đăng xuất</button>
+            </form>
         </div>
-
-        <div class="page-title">
-            <h2>Danh sách Folder</h2>
-            <button id="createFolderBtn">+ Tạo Folder Mới</button>
-        </div>
-
-        <ul id="folder-list">
-        </ul>
-        <div id="error-message"></div>
-    </main>
-</div>
-
-<div id="createFolderModal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <h2>Tạo Folder Mới</h2>
-        <form id="createFolderForm">
-            <div class="form-group">
-                <label for="folderName">Tên Folder:</label>
-                <input type="text" id="folderName" required>
-            </div>
-            <button type="submit" class="modal-button">Tạo</button>
-        </form>
-        <div id="modal-error" style="color: red; margin-top: 10px;"></div>
     </div>
-</div>
+</nav>
 
-<script>
-    const token = localStorage.getItem('jwtToken');
-    if (!token) {
-        window.location.href = '/login';
-    }
+<main class="container pb-5">
+    <div class="bg-white border rounded-4 shadow-sm p-3 p-lg-4 mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between gap-3">
+            <div>
+                <p class="text-uppercase text-muted small mb-1">Collection hiện tại</p>
+                <h1 class="h3 mb-1" th:text="${collectionName}">Collection</h1>
+                <p class="text-muted mb-0">Quản lý thư mục và tài liệu thuộc không gian này.</p>
+            </div>
+            <div class="text-md-end">
+                <a href="/" class="btn btn-link text-decoration-none">Quay về trang chủ</a>
+            </div>
+        </div>
+    </div>
 
-    // 1. LẤY THÔNG TIN TỪ URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const collectionId = urlParams.get('id');
-    const collectionName = urlParams.get('name');
+    <div th:if="${message}" class="alert alert-success rounded-4 border-0 shadow-sm" th:text="${message}"></div>
+    <div th:if="${error}" class="alert alert-danger rounded-4 border-0 shadow-sm" th:text="${error}"></div>
 
-    // Lấy các phần tử HTML
-    document.getElementById('page-title').textContent = `Collection: ${collectionName}`;
-    document.getElementById('collection-name-breadcrumb').textContent = collectionName;
+    <div class="row g-4">
+        <section class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <p class="text-uppercase text-muted small mb-1">Danh sách thư mục</p>
+                            <h2 class="h5 mb-0">Thư mục hiện có</h2>
+                        </div>
+                        <span class="badge text-bg-light text-secondary px-3 py-2" th:text="${danhSachFolder.size()} + ' thư mục'">0 thư mục</span>
+                    </div>
 
-    const folderList = document.getElementById('folder-list');
-    const errorDiv = document.getElementById('error-message');
-    const logoutButton = document.getElementById('logoutButton');
+                    <div class="list-group list-group-flush" th:if="${!#lists.isEmpty(danhSachFolder)}">
+                        <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                           th:each="folder : ${danhSachFolder}"
+                           th:href="@{/folder(id=${folder.id})}">
+                            <div>
+                                <div class="fw-semibold" th:text="${folder.name}">Tên folder</div>
+                                <small class="text-muted">Nhấp để mở và xem file</small>
+                            </div>
+                            <span class="text-secondary">&rarr;</span>
+                        </a>
+                    </div>
 
-    // Các phần tử của Modal
-    const modal = document.getElementById('createFolderModal');
-    const createBtn = document.getElementById('createFolderBtn');
-    const closeBtn = document.querySelector('.close');
-    const createFolderForm = document.getElementById('createFolderForm');
-    const folderNameInput = document.getElementById('folderName');
-    const modalError = document.getElementById('modal-error');
+                    <div class="text-center text-muted py-4" th:if="${#lists.isEmpty(danhSachFolder)}">
+                        Chưa có thư mục nào trong collection này.
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    // Hàm gọi API (dùng chung)
-    async function fetchApi(url, options = {}) {
-        const defaultOptions = {
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
-            }
-        };
-        const response = await fetch(url, { ...defaultOptions, ...options });
-        if (response.status === 401 || response.status === 403) throw new Error('Token không hợp lệ hoặc đã hết hạn.');
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || 'Đã xảy ra lỗi.');
-        }
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) return response.json();
-        return response.text();
-    }
-
-    // Hàm lấy danh sách folder
-    async function loadFolders() {
-        if (!collectionId) {
-            errorDiv.textContent = "Không tìm thấy Collection ID.";
-            return;
-        }
-        try {
-            // 2. GỌI API ĐỂ LẤY FOLDERS
-            const folders = await fetchApi(`/folders/by-collection/${collectionId}`);
-            displayFolders(folders);
-        } catch (error) {
-            handleAuthError(error);
-        }
-    }
-
-    // Hàm hiển thị folder lên HTML
-    function displayFolders(folders) {
-    folderList.innerHTML = '';
-        if (folders.length === 0) {
-            folderList.innerHTML = '<li>Collection này chưa có folder nào.</li>';
-            return;
-        }
-        for (const folder of folders) {
-            const li = document.createElement('li');
-            const a = document.createElement('a');
-
-            // SỬA DÒNG NÀY:
-            // Thêm &collectionId=${collectionId} để truyền ID collection sang trang sau
-            a.href = `/folder?id=${folder.id}&name=${encodeURIComponent(folder.name)}&collectionId=${collectionId}`;
-
-            a.innerHTML = `<strong>${folder.name}</strong>`;
-            li.appendChild(a);
-            folderList.appendChild(li);
-        }
-    }
-
-    // === XỬ LÝ TẠO FOLDER MỚI ===
-    createBtn.onclick = () => {
-        modal.style.display = "block";
-        modalError.textContent = "";
-        folderNameInput.value = "";
-    }
-    closeBtn.onclick = () => { modal.style.display = "none"; }
-    window.onclick = (event) => {
-        if (event.target == modal) { modal.style.display = "none"; }
-    }
-
-    // 4. GỌI API TẠO FOLDER
-    createFolderForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const folderName = folderNameInput.value;
-
-        try {
-            // API của bạn yêu cầu 'nameFolder' và 'collectionId'
-            await fetchApi('/folders/create', {
-                method: 'POST',
-                body: JSON.stringify({
-                    nameFolder: folderName,
-                    collectionId: collectionId
-                })
-            });
-
-            loadFolders(); // Tải lại danh sách
-            modal.style.display = "none"; // Đóng modal
-
-        } catch (error) {
-            modalError.textContent = "Lỗi: " + error.message;
-        }
-    });
-
-    // Hàm xử lý khi token hỏng/hết hạn
-    function handleAuthError(error) {
-        console.error('Lỗi xác thực:', error.message);
-        errorDiv.textContent = 'Phiên đăng nhập hết hạn. Đang chuyển về trang đăng nhập...';
-        localStorage.removeItem('jwtToken');
-        setTimeout(() => { window.location.href = '/login'; }, 2000);
-    }
-
-    // Xử lý đăng xuất
-    logoutButton.addEventListener('click', () => {
-        localStorage.removeItem('jwtToken');
-        window.location.href = '/login';
-    });
-
-    // Chạy hàm khi trang được tải
-    loadFolders();
-
-</script>
-
+        <aside class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                    <p class="text-uppercase text-muted small mb-2">Tạo thư mục</p>
+                    <h2 class="h5 mb-3">Sắp xếp tài liệu</h2>
+                    <form th:action="@{/folder/create}" method="post" th:object="${newFolder}">
+                        <div class="mb-3">
+                            <label for="nameFolder" class="form-label">Tên folder</label>
+                            <input id="nameFolder" type="text" th:field="*{nameFolder}" class="form-control" placeholder="VD: Hợp đồng 2024" required>
+                        </div>
+                        <input type="hidden" th:field="*{collectionId}">
+                        <button type="submit" class="btn btn-primary w-100">Tạo folder</button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+    </div>
+</main>
 </body>
 </html>
+

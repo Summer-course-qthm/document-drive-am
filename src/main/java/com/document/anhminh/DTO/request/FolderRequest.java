@@ -10,5 +10,5 @@ import lombok.*;
 public class FolderRequest {
     private String nameFolder;
     private Integer userId;
-    private Long collectionId;
+    private Integer collectionId;
 }

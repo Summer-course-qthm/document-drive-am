@@ -1,6 +1,7 @@
 package com.document.anhminh.ViewController;
 
 import com.document.anhminh.DTO.request.CollectionRequest;
+import com.document.anhminh.DTO.request.FolderRequest;
 import com.document.anhminh.entity.FolderEntity;
 import com.document.anhminh.service.CollectionService;
 import com.document.anhminh.service.FolderService;
@@ -32,9 +33,19 @@ public class CollectionViewController {
                                  Model model) {
 
         List<FolderEntity> folders = folderService.getFoldersByCollection(collectionId);
+
+        String resolvedName = collectionName;
+        if (resolvedName == null || resolvedName.isBlank()) {
+            resolvedName = collectionService.getCollection(collectionId).getName();
+        }
+
+        FolderRequest newFolder = new FolderRequest();
+        newFolder.setCollectionId(collectionId);
+
         model.addAttribute("danhSachFolder", folders);
-        model.addAttribute("collectionName", collectionName);
+        model.addAttribute("collectionName", resolvedName);
         model.addAttribute("collectionId", collectionId);
+        model.addAttribute("newFolder", newFolder);
         return "collection";
     }
 
