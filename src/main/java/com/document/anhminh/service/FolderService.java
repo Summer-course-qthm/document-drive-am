@@ -90,4 +90,11 @@ public class FolderService {
 
         return "Đã xóa thành công thư mục '" + folder.getName() + "' và " + filesInFolder.size() + " file bên trong.";
     }
+
+    public List<FolderEntity> getFoldersByCollection(Integer collectionId) {
+        if (!collectionRepository.existsById(collectionId)) {
+            throw new RuntimeException("Collection không tồn tại!");
+        }
+        return folderRepository.findByCollectionId(collectionId);
+    }
 }

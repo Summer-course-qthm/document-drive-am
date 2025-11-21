@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -32,5 +33,10 @@ public class FolderController {
     @DeleteMapping("/{folderId}")
     public ResponseEntity<String> deleteFolder(@PathVariable Integer folderId) {
         return ResponseEntity.ok(folderService.deleteFolder(folderId));
+    }
+    //Get All folder on Collection
+    @GetMapping("/by-collection/{collectionId}")
+    public ResponseEntity<List<FolderEntity>> getFoldersByCollection(@PathVariable Integer collectionId) {
+        return ResponseEntity.ok(folderService.getFoldersByCollection(collectionId));
     }
 }

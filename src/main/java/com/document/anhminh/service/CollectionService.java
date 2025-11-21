@@ -8,6 +8,8 @@ import com.document.anhminh.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class CollectionService {
@@ -25,4 +27,10 @@ public class CollectionService {
 
         return collectionRepository.save(collection);
     }
+
+    public List<CollectionEntity> getAllCollections() {
+        return collectionRepository.findAll();
+    }
+
+
 }

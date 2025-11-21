@@ -1,6 +1,7 @@
 package com.document.anhminh.config;
 
 import com.document.anhminh.service.CustomUserDetailsService;
+// SỬA LẠI: Import file filter mới
 import com.document.anhminh.utils.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -17,18 +18,25 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    // SỬA LẠI: Tiêm (Inject) bộ lọc mới
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService userDetailsService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll() // cho phép đăng nhập/đăng ký không cần token
-                        .requestMatchers("/user/me").authenticated()
-                        .anyRequest().authenticated()
+                        // Cho phép API /auth/register
+                        .requestMatchers("/auth/register").permitAll()
+                        // Cho phép trang login (GET/POST) và trang register (GET/POST)
+                        .requestMatchers("/login", "/register").permitAll()
+                        // Tất cả yêu cầu khác phải xác thực
+                        .anyRequest().permitAll()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                // SỬA LẠI: Thêm bộ lọc mới
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .userDetailsService(userDetailsService);
 
         return http.build();
     }
@@ -38,4 +46,3 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
-

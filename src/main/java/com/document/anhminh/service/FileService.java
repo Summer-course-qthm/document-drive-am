@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 @Service
 public class FileService {
@@ -115,5 +116,12 @@ public class FileService {
     // Chức năng đổi tên cần logic riêng để tương tác với Google Drive API
     public FileEntity renameFile(Integer fileId, String newName) {
         throw new UnsupportedOperationException("Chức năng đổi tên file trên Google Drive chưa được cài đặt.");
+    }
+
+    public List<FileEntity> getFilesByFolder(Integer folderId) {
+        if (!folderRepository.existsById(folderId)) {
+            throw new RuntimeException("Folder không tồn tại!");
+        }
+        return fileRepository.findByFolderId(folderId);
     }
 }

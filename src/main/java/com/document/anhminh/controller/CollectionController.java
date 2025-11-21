@@ -8,8 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/collection")
+@RequestMapping("/api/collection")
 @RequiredArgsConstructor
 public class CollectionController {
     @Autowired
@@ -20,5 +22,9 @@ public class CollectionController {
         return ResponseEntity.ok(collectionService.createCollection(request));
     }
 
+    @GetMapping
+    public ResponseEntity<List<CollectionEntity>> getAllCollections() {
+        return ResponseEntity.ok(collectionService.getAllCollections());
+    }
 
 }

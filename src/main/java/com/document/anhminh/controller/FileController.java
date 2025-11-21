@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -34,5 +35,10 @@ public class FileController {
 
         String newName = payload.get("newName");
         return ResponseEntity.ok(fileService.renameFile(fileId, newName));
+    }
+    //Get all File on Folder
+    @GetMapping("/by-folder/{folderId}")
+    public ResponseEntity<List<FileEntity>> getFilesByFolder(@PathVariable Integer folderId) {
+        return ResponseEntity.ok(fileService.getFilesByFolder(folderId));
     }
 }

@@ -2,8 +2,9 @@ package com.document.anhminh.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value; // <-- Thêm import
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
@@ -13,19 +14,26 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    // Secret key để ký token
-    private final Key secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256); //akfjkasdjfasjdfkj
+    // SỬA LẠI: Đọc khóa từ file properties
+    private final Key secretKey;
+    private final long jwtExpiration;
+
+    public JwtService(
+            @Value("${jwt.secret}") String secretString,
+            @Value("${jwt.expiration}") long jwtExpiration
+    ) {
+        byte[] keyBytes = Decoders.BASE64.decode(secretString);
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
+        this.jwtExpiration = jwtExpiration;
+    }
 
     // Tạo token từ username
     public String generateToken(String username) {
-        // Thời gian sống của token (1h)
-        // 1 giờ (ms)
-        long jwtExpiration = 3600000;
         return Jwts.builder()
-                .setSubject(username) // lưu vào subject(cridentials: tuyệt mật)
-                .setIssuedAt(new Date(System.currentTimeMillis())) // thời gian phát hành
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration)) // hết hạn
-                .signWith(secretKey) // ký bằng secret key
+                .setSubject(username)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration)) // Dùng biến expiration
+                .signWith(secretKey)
                 .compact();
     }
 

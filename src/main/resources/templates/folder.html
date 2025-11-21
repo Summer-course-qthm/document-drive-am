@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Chi tiết Folder</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background-color: #f9f9f9; }
+        #app { max-width: 900px; margin: 2rem auto; padding: 2rem; background: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 1rem; }
+        header h1 { margin: 0; color: #333; }
+        #logoutButton { background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+
+        .page-title { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; }
+        #uploadFileBtn { background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+
+        #file-list { list-style: none; padding: 0; }
+        #file-list li { display: flex; justify-content: space-between; align-items: center; background: #fafafa; border: 1px solid #ddd; padding: 1rem; margin-top: 1rem; border-radius: 6px; }
+        #file-list li strong { font-size: 1.1rem; color: #333; }
+        #file-list .file-actions button { margin-left: 10px; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        .download-btn { background: #007bff; color: white; }
+        .delete-btn { background: #dc3545; color: white; }
+
+        #error-message { color: #dc3545; font-weight: bold; margin-top: 1rem; }
+        .breadcrumb { font-size: 1.2rem; margin-bottom: 1rem; }
+        .breadcrumb a { color: #007bff; text-decoration: none; }
+        .breadcrumb span { color: #6c757d; }
+
+        /* CSS cho Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 400px; border-radius: 8px; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .form-group input { width: 95%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .modal-button { background: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <header>
+        <h1 id="page-title">...</h1>
+        <button id="logoutButton">Đăng xuất</button>
+    </header>
+
+    <main>
+        <div class="breadcrumb">
+            <a href="/">Trang chủ</a> /
+            <a id="back-to-collection-link" href="#">...</a> /
+            <span id="folder-name-breadcrumb">...</span>
+        </div>
+
+        <div class="page-title">
+            <h2>Danh sách File</h2>
+            <button id="uploadFileBtn">+ Upload File Mới</button>
+        </div>
+
+        <ul id="file-list">
+        </ul>
+        <div id="error-message"></div>
+    </main>
+</div>
+
+<div id="uploadFileModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Upload File Mới</h2>
+        <form id="uploadFileForm">
+            <div class="form-group">
+                <label for="fileInput">Chọn file:</label>
+                <input type="file" id="fileInput" required>
+            </div>
+            <button type="submit" class="modal-button">Upload</button>
+        </form>
+        <div id="modal-error" style="color: red; margin-top: 10px;"></div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('jwtToken');
+    if (!token) {
+        window.location.href = '/login';
+    }
+
+    // 1. LẤY THÔNG TIN TỪ URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const folderId = urlParams.get('id');
+    const folderName = urlParams.get('name');
+    const collectionId = urlParams.get('collectionId'); // Lấy từ bước 1
+
+    // Lấy các phần tử HTML
+    document.getElementById('page-title').textContent = `Folder: ${folderName}`;
+    document.getElementById('folder-name-breadcrumb').textContent = folderName;
+    document.getElementById('back-to-collection-link').href = `/collection?id=${collectionId}`;
+    document.getElementById('back-to-collection-link').textContent = "Collection"; // Bạn có thể đặt tên Collection ở đây nếu muốn
+
+    const fileList = document.getElementById('file-list');
+    const errorDiv = document.getElementById('error-message');
+    const logoutButton = document.getElementById('logoutButton');
+
+    // Các phần tử của Modal
+    const modal = document.getElementById('uploadFileModal');
+    const createBtn = document.getElementById('uploadFileBtn');
+    const closeBtn = document.querySelector('.close');
+    const uploadFileForm = document.getElementById('uploadFileForm');
+    const fileInput = document.getElementById('fileInput');
+    const modalError = document.getElementById('modal-error');
+
+    // Hàm gọi API (dùng chung)
+    // Cập nhật để xử lý FormData và JSON
+    async function fetchApi(url, options = {}) {
+        const defaultHeaders = {
+            'Authorization': 'Bearer ' + token
+        };
+
+        // Không set Content-Type cho FormData, trình duyệt sẽ tự làm
+        if (!(options.body instanceof FormData)) {
+            defaultHeaders['Content-Type'] = 'application/json';
+        }
+
+        const response = await fetch(url, {
+            ...options,
+            headers: { ...defaultHeaders, ...options.headers }
+        });
+
+        if (response.status === 401 || response.status === 403) throw new Error('Token không hợp lệ hoặc đã hết hạn.');
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Đã xảy ra lỗi.');
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) return response.json();
+        return response.text(); // Dùng cho hàm Delete
+    }
+
+    // Hàm lấy danh sách file
+    async function loadFiles() {
+        if (!folderId) {
+            errorDiv.textContent = "Không tìm thấy Folder ID.";
+            return;
+        }
+        try {
+            // 2. GỌI API ĐỂ LẤY FILES
+            const files = await fetchApi(`/files/by-folder/${folderId}`);
+            displayFiles(files);
+        } catch (error) {
+            handleAuthError(error);
+        }
+    }
+
+    // Hàm hiển thị file lên HTML
+    function displayFiles(files) {
+        fileList.innerHTML = '';
+        if (files.length === 0) {
+            fileList.innerHTML = '<li>Folder này chưa có file nào.</li>';
+            return;
+        }
+        for (const file of files) {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <strong>${file.name}</strong>
+                <div class="file-actions">
+                    <button class="download-btn" data-id="${file.id}" data-name="${file.name}">Tải về</button>
+                    <button class="delete-btn" data-id="${file.id}" data-name="${file.name}">Xóa</button>
+                </div>
+            `;
+            fileList.appendChild(li);
+        }
+    }
+
+    // === XỬ LÝ UPLOAD FILE ===
+    createBtn.onclick = () => {
+        modal.style.display = "block";
+        modalError.textContent = "";
+        uploadFileForm.reset(); // Xóa file đã chọn (nếu có)
+    }
+    closeBtn.onclick = () => { modal.style.display = "none"; }
+
+    // 3. GỌI API UPLOAD (DÙNG FORMDATA)
+    uploadFileForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (fileInput.files.length === 0) {
+            modalError.textContent = "Vui lòng chọn một file.";
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folderId', folderId);
+
+        try {
+            await fetchApi('/files/upload', {
+                method: 'POST',
+                body: formData // Gửi FormData, không phải JSON
+            });
+            loadFiles(); // Tải lại danh sách
+            modal.style.display = "none";
+        } catch (error) {
+            modalError.textContent = "Lỗi: " + error.message;
+        }
+    });
+
+    // === XỬ LÝ CLICK TẢI VỀ VÀ XÓA ===
+    fileList.addEventListener('click', async (event) => {
+        const target = event.target;
+        const fileId = target.dataset.id;
+        const fileName = target.dataset.name;
+
+        // 4. GỌI API XÓA FILE
+        if (target.classList.contains('delete-btn')) {
+            if (confirm(`Bạn có chắc muốn xóa file "${fileName}" không?`)) {
+                try {
+                    await fetchApi(`/files/${fileId}`, { method: 'DELETE' });
+                    loadFiles(); // Tải lại danh sách
+                } catch (error) {
+                    handleAuthError(error);
+                }
+            }
+        }
+
+        // 5. XỬ LÝ TẢI FILE (DÙNG BLOB)
+        if (target.classList.contains('download-btn')) {
+            try {
+                // Dùng fetch gốc vì chúng ta cần response đầy đủ
+                const response = await fetch(`/files/download/${fileId}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!response.ok) throw new Error('Không thể tải file.');
+
+                const blob = await response.blob(); // Lấy file về dưới dạng Blob
+                const url = window.URL.createObjectURL(blob); // Tạo URL tạm
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = fileName; // Tên file khi tải về
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                errorDiv.textContent = "Lỗi khi tải file: " + error.message;
+            }
+        }
+    });
+
+    // Hàm xử lý khi token hỏng/hết hạn
+    function handleAuthError(error) {
+        console.error('Lỗi xác thực:', error.message);
+        errorDiv.textContent = 'Phiên đăng nhập hết hạn. Đang chuyển về trang đăng nhập...';
+        localStorage.removeItem('jwtToken');
+        setTimeout(() => { window.location.href = '/login'; }, 2000);
+    }
+
+    // Xử lý đăng xuất
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('jwtToken');
+        window.location.href = '/login';
+    });
+
+    // Chạy hàm khi trang được tải
+    loadFiles();
+
+</script>
+
+</body>
+</html>

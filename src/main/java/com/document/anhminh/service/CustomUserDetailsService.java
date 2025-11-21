@@ -26,7 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
+        System.out.println(user);
         // Lấy danh sách role của user
         List<GrantedAuthority> authorities = userRoleRepository.findByUserId(user.getUserId())
                 .stream()
