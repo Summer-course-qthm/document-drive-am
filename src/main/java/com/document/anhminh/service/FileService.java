@@ -40,23 +40,38 @@ public class FileService {
      * Tải file lên Google Drive và lưu thông tin vào CSDL.
      */
     public FileEntity storeFile(MultipartFile file, Integer folderId) {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("File không được để trống!");
+        }
+        
+        if (folderId == null) {
+            throw new RuntimeException("Folder ID không được để trống!");
+        }
+        
         FolderEntity folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new RuntimeException("Thư mục không tồn tại!"));
+        
         try {
             // 1. Tải file lên Google Drive và nhận về File ID
             String fileId = googleDriveService.uploadFile(file);
+            
+            if (fileId == null || fileId.trim().isEmpty()) {
+                throw new RuntimeException("Không thể lấy được File ID từ Google Drive sau khi upload");
+            }
 
             // 2. Lưu thông tin vào CSDL
             FileEntity fileEntity = new FileEntity();
             fileEntity.setFolder(folder);
-            fileEntity.setName(file.getOriginalFilename());
-            fileEntity.setType(file.getContentType());
+            fileEntity.setName(file.getOriginalFilename() != null ? file.getOriginalFilename() : "untitled");
+            fileEntity.setType(file.getContentType() != null ? file.getContentType() : "application/octet-stream");
             fileEntity.setSize((int) file.getSize());
             fileEntity.setLink(fileId); // <-- Quan trọng: Lưu Google Drive File ID vào trường link
 
             return fileRepository.save(fileEntity);
         } catch (IOException e) {
-            throw new RuntimeException("Lỗi khi tải file lên Google Drive", e);
+            throw new RuntimeException("Lỗi khi tải file lên Google Drive: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi không mong đợi khi upload file: " + e.getMessage(), e);
         }
     }
 
@@ -83,20 +98,39 @@ public class FileService {
      * Tải file từ Google Drive.
      */
     public FileDownloadData loadFileAsResource(Integer fileId) {
+        if (fileId == null) {
+            throw new RuntimeException("File ID không được để trống!");
+        }
+        
         try {
             FileEntity fileEntity = fileRepository.findById(fileId)
                     .orElseThrow(() -> new RuntimeException("File không tồn tại!"));
 
+            if (fileEntity.getLink() == null || fileEntity.getLink().trim().isEmpty()) {
+                throw new RuntimeException("File không có Google Drive ID!");
+            }
+
             // Dùng ByteArrayOutputStream để hứng dữ liệu từ Google Drive
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             googleDriveService.downloadFile(fileEntity.getLink(), outputStream);
+            
+            byte[] fileData = outputStream.toByteArray();
+            if (fileData.length == 0) {
+                throw new RuntimeException("File tải về từ Google Drive rỗng!");
+            }
 
             // Gói dữ liệu thành Resource để trả về
-            Resource resource = new ByteArrayResource(outputStream.toByteArray());
+            Resource resource = new ByteArrayResource(fileData);
 
-            return new FileDownloadData(resource, fileEntity.getName(), fileEntity.getType());
+            return new FileDownloadData(
+                    resource, 
+                    fileEntity.getName() != null ? fileEntity.getName() : "file",
+                    fileEntity.getType() != null ? fileEntity.getType() : "application/octet-stream"
+            );
         } catch (IOException e) {
-            throw new RuntimeException("Lỗi khi tải file từ Google Drive!", e);
+            throw new RuntimeException("Lỗi khi tải file từ Google Drive: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi không mong đợi khi download file: " + e.getMessage(), e);
         }
     }
 

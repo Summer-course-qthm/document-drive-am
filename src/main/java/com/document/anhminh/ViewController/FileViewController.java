@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Controller
 public class FileViewController {
 
@@ -83,12 +86,24 @@ public class FileViewController {
 
         MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
         if (data.getContentType() != null) {
-            mediaType = MediaType.parseMediaType(data.getContentType());
+            try {
+                mediaType = MediaType.parseMediaType(data.getContentType());
+            } catch (Exception e) {
+                // Nếu không parse được, dùng mặc định
+                mediaType = MediaType.APPLICATION_OCTET_STREAM;
+            }
         }
+
+        // Encode filename để xử lý các ký tự đặc biệt
+        String encodedFilename = URLEncoder.encode(
+                data.getFilename() != null ? data.getFilename() : "file",
+                StandardCharsets.UTF_8
+        ).replace("+", "%20");
 
         return ResponseEntity.ok()
                 .contentType(mediaType)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + data.getFilename() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, 
+                        "attachment; filename=\"" + data.getFilename() + "\"; filename*=UTF-8''" + encodedFilename)
                 .body(data.getResource());
     }
 
